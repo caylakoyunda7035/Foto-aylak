@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mobil Foto Editör</title>
+<style>
+  :root {
+    --bg: #0f1218;
+    --panel: #161a22;
+    --card: #1c2230;
+    --border: #2a3342;
+    --text: #e6edf7;
+    --muted: #8a94a6;
+    --accent: #3b82f6;
+    --accent-2: #22c55e;
+    --danger: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  }
+  header {
+    position: sticky; top: 0; z-index: 10;
+    background: linear-gradient(180deg, #111723, var(--panel));
+    border-bottom: 1px solid var(--border);
+    padding: 16px;
+  }
+  header h1 {
+    margin: 0; font-size: 18px; letter-spacing: 0.3px;
+  }
+  .container {
+    max-width: 880px; margin: 0 auto; padding: 12px;
+    display: grid; gap: 12px;
+  }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  }
+  .title {
+    font-size: 14px; color: var(--muted); margin: 0 0 6px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .title .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+  }
+  .canvas-wrap {
+    background: #0b0f16; border: 1px solid var(--border);
+    border-radius: 12px; padding: 8px;
+  }
+  canvas {
+    display: block; width: 100%; height: auto; border-radius: 8px;
+    background: #000; touch-action: none;
+  }
+  .toolbar {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  }
+  .toolbar.small { grid-template-columns: repeat(3, 1fr); }
+  .filters {
+    display: grid; gap: 8px;
+    grid-template-columns: repeat(5, 1fr);
+  }
+  @media (max-width: 600px) {
+    .filters { grid-template-columns: repeat(3, 1fr); }
+    .toolbar { grid-template-columns: repeat(2, 1fr); }
+    .toolbar.small { grid-template-columns: repeat(2, 1fr); }
+  }
+  button, .btn {
+    appearance: none; border: 1px solid var(--border);
+    background: #202739; color: var(--text);
+    padding: 10px 12px; border-radius: 10px; font-size: 14px;
+    cursor: pointer; transition: transform .06s ease, background .15s ease;
+  }
+  button:hover { background: #283048; }
+  button:active { transform: scale(0.98); }
+  button.primary { background: var(--accent); border-color: transparent; color: #fff; }
+  button.success { background: var(--accent-2); border-color: transparent; color: #06130a; }
+  button.danger { background: var(--danger); border-color: transparent; color: #fff; }
+  button[disabled] { opacity: .5; cursor: not-allowed; }
+  .filter-btn { font-size: 12px; padding: 8px; }
+  .filter-btn.active { outline: 2px solid var(--accent); background: #24304a; }
+  .row {
+    display: grid; gap: 8px; grid-template-columns: 1fr auto;
+  }
+  input[type="file"] {
+    width: 100%;
+  }
+  input[type="text"] {
+    width: 100%; padding: 10px 12px; background: #202739;
+    border: 1px solid var(--border); border-radius: 10px; color: var(--text);
+  }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .footer {
+    text-align: center; color: var(--muted); font-size: 12px; padding-bottom: 20px;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Mobil Foto Editör</h1>
+  </header>
+
+  <div class="container">
+    <!-- Yükleme ve kaydetme -->
+    <div class="card">
+      <p class="title"><span class="dot"></span> Dosya</p>
+      <div class="row">
+        <input type="file" id="fileInput" accept="image/*">
+        <button id="saveBtn" class="primary" disabled>Kaydet (PNG)</button>
+      </div>
+      <p class="hint">Resim yükledikten sonra düzenleyebilir ve PNG olarak kaydedebilirsin.</p>
+    </div>
+
+    <!-- Tuval -->
+    <div class="card">
+      <p class="title"><span class="dot"></span> Tuval</p>
+      <div class="canvas-wrap">
+        <canvas id="canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Filtreler -->
+    <div class="card">
+      <p class="title"><span class="dot"></span> Filtreler</p>
+      <div class="filters" id="filters">
+        <!-- Butonlar JS ile aktiflik gösterecek -->
+        <button class="filter-btn active" data-filter="none">Orijinal</button>
+        <button class="filter-btn" data-filter="grayscale(100%)">Siyah-Beyaz</button>
+        <button class="filter-btn" data-filter="sepia(100%)">Sepya</button>
+        <button class="filter-btn" data-filter="contrast(150%)">Kontrast</button>
+        <button class="filter-btn" data-filter="brightness(120%)">Parlak</button>
+        <button class="filter-btn" data-filter="invert(100%)">Ters</button>
+        <button class="filter-btn" data-filter="saturate(200%)">Doygun</button>
+        <button class="filter-btn" data-filter="hue-rotate(90deg)">Renk Döndür</button>
+        <button class="filter-btn" data-filter="blur(2px)">Bulanık</button>
+        <button class="filter-btn" data-filter="drop-shadow(4px 4px 2px black)">Gölge</button>
+      </div>
+      <p class="hint">Filtreler mevcut görüntüye uygulanır. Döndürme veya kırpma yaptıktan sonra da doğru sonuç verir.</p>
+    </div>
+
+    <!-- İşlemler -->
+    <div class="card">
+      <p class="title"><span class="dot"></span> Düzenleme</p>
+      <div class="toolbar">
+        <button id="rotateLeft" disabled>⟲ Sola Döndür</button>
+        <button id="rotateRight" disabled>⟳ Sağa Döndür</button>
+        <button id="crop169" disabled>✂️ 16:9 Kırp</button>
+        <button id="crop43" disabled>✂️ 4:3 Kırp</button>
+      </div>
+      <div class="toolbar small" style="margin-top:8px">
+        <button id="undoBtn" disabled>↩️ Geri Al</button>
+        <button id="redoBtn" disabled>↪️ İleri Al</button>
+        <button id="resetBtn" class="danger" disabled>Temizle</button>
+      </div>
+    </div>
+
+    <!-- Metin -->
+    <div class="card">
+      <p class="title"><span class="dot"></span> Metin ekleme</p>
+      <div class="row">
+        <input type="text" id="textInput" placeholder="Metin yaz (merkeze eklenir)">
+        <button id="addTextBtn" class="success" disabled>📝 Metin Ekle</button>
+      </div>
+      <p class="hint">Basit metin ekleme: yaz ve ekle. (Varsayılan konum: tuvalin merkezi)</p>
+    </div>
+
+    <div class="footer">© Foto Editör — hafif ve mobil uyumlu</div>
+  </div>
+
+<script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  let history = [], future = [];
+  let imageLoaded = false;
+  let currentFilter = 'none';
+
+  const fileInput = document.getElementById('fileInput');
+  const saveBtn = document.getElementById('saveBtn');
+  const rotateLeftBtn = document.getElementById('rotateLeft');
+  const rotateRightBtn = document.getElementById('rotateRight');
+  const crop169Btn = document.getElementById('crop169');
+  const crop43Btn = document.getElementById('crop43');
+  const undoBtn = document.getElementById('undoBtn');
+  const redoBtn = document.getElementById('redoBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const addTextBtn = document.getElementById('addTextBtn');
+  const textInput = document.getElementById('textInput');
+
+  // Başlangıçta tuvali küçük bir alanla hazırla
+  function initCanvasPlaceholder() {
+    canvas.width = 800; canvas.height = 500;
+    ctx.fillStyle = '#0b0f16';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#8a94a6';
+    ctx.font = '16px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('Resim yükleyin', canvas.width/2, canvas.height/2);
+  }
+  initCanvasPlaceholder();
+
+  function setControlsEnabled(state) {
+    [saveBtn, rotateLeftBtn, rotateRightBtn, crop169Btn, crop43Btn, undoBtn, redoBtn, resetBtn, addTextBtn]
+      .forEach(b => b.disabled = !state);
+  }
+
+  fileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      imageLoaded = true;
+      currentFilter = 'none';
+      pushHistory();
+      setControlsEnabled(true);
+      setActiveFilterButton('none');
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  });
+
+  function pushHistory() {
+    try {
+      const snap = canvas.toDataURL('image/png');
+      history.push(snap);
+      if (history.length > 80) history.shift();
+      future.length = 0;
+      updateUndoRedo();
+    } catch (e) {}
+  }
+
+  function updateUndoRedo() {
+    undoBtn.disabled = history.length <= 1;
+    redoBtn.disabled = future.length === 0;
+  }
+
+  function loadSnapshot(dataURL) {
+    const i = new Image();
+    i.onload = () => {
+      canvas.width = i.width; canvas.height = i.height;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(i, 0, 0);
+    };
+    i.src = dataURL;
+  }
+
+  undoBtn.addEventListener('click', () => {
+    if (history.length > 1) {
+      const current = history.pop();
+      future.push(current);
+      loadSnapshot(history[history.length - 1]);
+      updateUndoRedo();
+    }
+  });
+
+  redoBtn.addEventListener('click', () => {
+    if (future.length) {
+      const next = future.pop();
+      history.push(next);
+      loadSnapshot(next);
+      updateUndoRedo();
+    }
+  });
+
+  // Mevcut tuvali kaynak alarak filtre uygula
+  function applyFilter(filterCSS) {
+    const srcURL = canvas.toDataURL('image/png');
+    const srcImg = new Image();
+    srcImg.onload = () => {
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.filter = filterCSS || 'none';
+      ctx.drawImage(srcImg, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
+      pushHistory();
+    };
+    srcImg.src = srcURL;
+  }
+
+  function setActiveFilterButton(filter) {
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.filter === filter);
+    });
+  }
+
+  document.getElementById('filters').addEventListener('click', (ev) => {
+    const btn = ev.target.closest('.filter-btn');
+    if (!btn || !imageLoaded) return;
+    const filter = btn.dataset.filter || 'none';
+    currentFilter = filter;
+    setActiveFilterButton(filter);
+    applyFilter(filter);
+  });
+
+  function rotate(deg) {
+    const temp = document.createElement('canvas');
+    const tctx = temp.getContext('2d');
+    if (deg % 180 !== 0) {
+      temp.width = canvas.height; temp.height = canvas.width;
+    } else {
+      temp.width = canvas.width; temp.height = canvas.height;
+    }
+    tctx.translate(temp.width / 2, temp.height / 2);
+    tctx.rotate(deg * Math.PI / 180);
+    tctx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+    canvas.width = temp.width; canvas.height = temp.height;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(temp, 0, 0);
+    // Filtre aktifse tekrar uygula (görsel tutarlılık)
+    if (currentFilter && currentFilter !== 'none') applyFilter(currentFilter); else pushHistory();
+  }
+
+  rotateLeftBtn.addEventListener('click', () => rotate(-90));
+  rotateRightBtn.addEventListener('click', () => rotate(90));
+
+  function cropAspect(ax, ay) {
+    const w = canvas.width, h = canvas.height;
+    const target = ax / ay;
+    let newW = w, newH = h;
+    if (w / h > target) newW = h * target;
+    else newH = w / target;
+    const x = Math.round((w - newW) / 2);
+    const y = Math.round((h - newH) / 2);
+    const imgData = ctx.getImageData(x, y, Math.round(newW), Math.round(newH));
+    canvas.width = Math.round(newW);
+    canvas.height = Math.round(newH);
+    ctx.putImageData(imgData, 0, 0);
+    if (currentFilter && currentFilter !== 'none') applyFilter(currentFilter); else pushHistory();
+  }
+
+  crop169Btn.addEventListener('click', () => cropAspect(16, 9));
+  crop43Btn.addEventListener('click', () => cropAspect(4, 3));
+
+  addTextBtn.addEventListener('click', () => {
+    const t = textInput.value.trim();
+    if (!t) return;
+    ctx.save();
+    ctx.filter = 'none';
+    ctx.font = `${Math.max(20, Math.floor(canvas.width * 0.04))}px system-ui, -apple-system, Segoe UI`;
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // Hafif gölge okunabilirlik için
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
+    ctx.fillText(t, canvas.width / 2, canvas.height / 2);
+    ctx.restore();
+    pushHistory();
+  });
+
+  saveBtn.addEventListener('click', () => {
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = 'duzenlenmis.png';
+    a.click();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    history.length = 0;
+    future.length = 0;
+    imageLoaded = false;
+    currentFilter = 'none';
+    setControlsEnabled(false);
+    setActiveFilterButton('none');
+    initCanvasPlaceholder();
+  });
+</script>
+</body>
+</html>
+
+
+
+
