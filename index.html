@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Mobil Foto Editör</title>
+<title>FotoÇaylak</title>
 <style>
   :root {
     --bg: #0f1218;
@@ -98,7 +99,7 @@
 </head>
 <body>
   <header>
-    <h1>Mobil Foto Editör</h1>
+    <h1>FotoÇaylak (Foto Editor) 1.1.0</h1>
   </header>
 
   <div class="container">
@@ -107,10 +108,18 @@
       <p class="title"><span class="dot"></span> Dosya</p>
       <div class="row">
         <input type="file" id="fileInput" accept="image/*">
-        <button id="saveBtn" class="primary" disabled>Kaydet (PNG)</button>
+        <button id="saveBtn" class="primary" disabled>Kaydet</button>
       </div>
-      <p class="hint">Resim yükledikten sonra düzenleyebilir ve PNG olarak kaydedebilirsin.</p>
+      <p class="hint">Resim yükledikten sonra düzenleyebilir ve seçtiğin formatta kaydedebilirsin.</p>
     </div>
+<div class="row" style="margin-top:8px">
+  <select id="formatSelect">
+    <option value="png">PNG</option>
+    <option value="jpeg">JPG</option>
+    <option value="jpg">JPEG</option>
+    <option value="webp">WEBP</option>
+  </select>
+</div>
 
     <!-- Tuval -->
     <div class="card">
@@ -355,13 +364,17 @@
     pushHistory();
   });
 
-  saveBtn.addEventListener('click', () => {
-    const a = document.createElement('a');
-    a.href = canvas.toDataURL('image/png');
-    a.download = 'duzenlenmis.png';
-    a.click();
-  });
+saveBtn.addEventListener('click', () => {
+  const format = document.getElementById('formatSelect').value;
+  let mime = 'image/png';
+  if (format === 'jpeg' || format === 'jpg') mime = 'image/jpeg';
+  else if (format === 'webp') mime = 'image/webp';
 
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL(mime, 0.92); // kalite: 0.92
+  a.download = 'duzenlenmis.' + format;
+  a.click();
+});
   resetBtn.addEventListener('click', () => {
     history.length = 0;
     future.length = 0;
